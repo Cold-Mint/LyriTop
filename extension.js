@@ -27,11 +27,13 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { MprisSource } from 'resource:///org/gnome/shell/ui/mpris.js';
 
 class MediaMonitor {
-    constructor(onUpdate) {
+    constructor(onUpdate, settings) {
         this._source = null;
         this._players = new Map();
         this._onUpdate = onUpdate;
         this._updateTimeoutId = null;
+        this._settings = settings;
+        this._intervalChangedId = null;
     }
 
     enable() {
@@ -49,10 +51,21 @@ class MediaMonitor {
 
         // Start periodic update for position
         this._startPositionUpdate();
+
+        // Listen for interval changes
+        this._intervalChangedId = this._settings.connect('changed::update-interval', () => {
+            this._stopPositionUpdate();
+            this._startPositionUpdate();
+        });
     }
 
     disable() {
         this._stopPositionUpdate();
+
+        if (this._intervalChangedId) {
+            this._settings.disconnect(this._intervalChangedId);
+            this._intervalChangedId = null;
+        }
 
         if (this._source) {
             this._source = null;
@@ -69,8 +82,9 @@ class MediaMonitor {
             return;
         }
 
-        // Update every second
-        this._updateTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1000, () => {
+        // Get update interval from settings (in milliseconds)
+        const interval = this._settings.get_uint('update-interval');
+        this._updateTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, interval, () => {
             this._updateCurrentPlayer();
             return GLib.SOURCE_CONTINUE;
         });
@@ -256,7 +270,7 @@ export default class LyriTopExtension extends Extension {
             if (this._label) {
                 this._label.text = text;
             }
-        });
+        }, this._settings);
         this._mediaMonitor.enable();
 
         this._settingsChangedId = this._settings.connect('changed::position', () => {

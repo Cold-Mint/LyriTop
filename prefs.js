@@ -46,5 +46,23 @@ export default class LyriTopPreferences extends ExtensionPreferences {
             'value',
             0
         );
+
+        const updateIntervalRow = new Adw.SpinRow({
+            title: _('Update Interval (ms)'),
+            subtitle: _('How often to update playback position'),
+            adjustment: new Gtk.Adjustment({
+                lower: 200,
+                upper: 1000,
+                step_increment: 1,
+            }),
+        });
+        group.add(updateIntervalRow);
+
+        settings.bind(
+            'update-interval',
+            updateIntervalRow,
+            'value',
+            0
+        );
     }
 }

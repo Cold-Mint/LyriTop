@@ -11,5 +11,10 @@
       <summary>Indicator Offset</summary>
       <description>Index offset of the indicator in the panel box.</description>
     </key>
+    <key name="update-interval" type="u">
+      <default>200</default>
+      <summary>Update Interval</summary>
+      <description>Interval in milliseconds for updating the playback position.</description>
+    </key>
   </schema>
 </schemalist>
