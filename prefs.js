@@ -29,5 +29,22 @@ export default class LyriTopPreferences extends ExtensionPreferences {
         row.connect('notify::selected', () => {
             settings.set_string('position', positions[row.selected]);
         });
+
+        const offsetRow = new Adw.SpinRow({
+            title: _('Indicator Offset'),
+            adjustment: new Gtk.Adjustment({
+                lower: 0,
+                upper: 20,
+                step_increment: 1,
+            }),
+        });
+        group.add(offsetRow);
+
+        settings.bind(
+            'offset',
+            offsetRow,
+            'value',
+            0
+        );
     }
 }

@@ -36,12 +36,21 @@ export default class LyriTopExtension extends Extension {
         this._settingsChangedId = this._settings.connect('changed::position', () => {
             this._updatePosition();
         });
+
+        this._offsetChangedId = this._settings.connect('changed::offset', () => {
+            this._updatePosition();
+        });
     }
 
     disable() {
         if (this._settingsChangedId) {
             this._settings.disconnect(this._settingsChangedId);
             this._settingsChangedId = null;
+        }
+
+        if (this._offsetChangedId) {
+            this._settings.disconnect(this._offsetChangedId);
+            this._offsetChangedId = null;
         }
 
         this._destroyIndicator();
@@ -94,6 +103,7 @@ export default class LyriTopExtension extends Extension {
         }
 
         const position = this._settings.get_string('position');
+        const offset = this._settings.get_uint('offset');
         let panelBox;
 
         if (position === 'left') {
@@ -105,18 +115,15 @@ export default class LyriTopExtension extends Extension {
             panelBox = Main.panel._rightBox;
         }
 
-        // Add to the new position. 
-        // For 'right', we usually want it at the beginning (leftmost of right box) or end?
-        // The reference 'executor' uses insert_child_at_index. 
-        // For simplicity, we'll just add it. If specific ordering is needed, we can refine.
-        // Usually extensions want to be at index 0 for right box to be "leftmost" of the right indicators,
-        // or add_child to be at the end (rightmost).
-        // Let's stick to simple add_child for now, or insert at 0 for right box to avoid being after the system menu.
+        const children = panelBox.get_children();
+        let index = offset;
 
-        if (position === 'right') {
-            panelBox.insert_child_at_index(this._box, 0);
-        } else {
-            panelBox.add_child(this._box);
+        // Clamp index to be within valid range (0 to children.length)
+        // Note: We are adding a new child, so valid index is up to children.length
+        if (index > children.length) {
+            index = children.length;
         }
+
+        panelBox.insert_child_at_index(this._box, index);
     }
 }
