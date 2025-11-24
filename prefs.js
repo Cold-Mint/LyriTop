@@ -51,7 +51,7 @@ export default class LyriTopPreferences extends ExtensionPreferences {
             title: _('Update Interval (ms)'),
             subtitle: _('How often to update playback position'),
             adjustment: new Gtk.Adjustment({
-                lower: 200,
+                lower: 50,
                 upper: 1000,
                 step_increment: 1,
             }),
@@ -64,5 +64,95 @@ export default class LyriTopPreferences extends ExtensionPreferences {
             'value',
             0
         );
+
+        // Lyric files group
+        const lyricGroup = new Adw.PreferencesGroup({
+            title: _('Lyrics Configuration'),
+            description: _('Manage JSON files containing song title to lyric file mappings'),
+        });
+        page.add(lyricGroup);
+
+        // Create a list box to display lyric files
+        const listBox = new Gtk.ListBox({
+            selection_mode: Gtk.SelectionMode.SINGLE,
+            css_classes: ['boxed-list'],
+        });
+        lyricGroup.add(listBox);
+
+        // Function to update the list
+        const updateList = () => {
+            // Remove all existing rows
+            let child = listBox.get_first_child();
+            while (child) {
+                const next = child.get_next_sibling();
+                listBox.remove(child);
+                child = next;
+            }
+
+            // Add current lyric files
+            const lyricFiles = settings.get_strv('lyric-files');
+            for (const filePath of lyricFiles) {
+                const row = new Adw.ActionRow({
+                    title: filePath,
+                });
+                listBox.append(row);
+            }
+        };
+
+        // Initial list update
+        updateList();
+
+        // Listen for changes
+        settings.connect('changed::lyric-files', updateList);
+
+        // Add button
+        const addButton = new Gtk.Button({
+            label: _('Add Lyric Configuration File'),
+            margin_top: 10,
+        });
+        lyricGroup.add(addButton);
+
+        addButton.connect('clicked', () => {
+            const fileDialog = new Gtk.FileDialog({
+                title: _('Select JSON Configuration File'),
+            });
+
+            fileDialog.open(window, null, (dialog, result) => {
+                try {
+                    const file = dialog.open_finish(result);
+                    if (file) {
+                        const filePath = file.get_path();
+                        const currentFiles = settings.get_strv('lyric-files');
+                        if (!currentFiles.includes(filePath)) {
+                            currentFiles.push(filePath);
+                            settings.set_strv('lyric-files', currentFiles);
+                        }
+                    }
+                } catch (e) {
+                    // User cancelled or error occurred
+                }
+            });
+        });
+
+        // Remove button
+        const removeButton = new Gtk.Button({
+            label: _('Remove Selected File'),
+            margin_top: 5,
+            css_classes: ['destructive-action'],
+        });
+        lyricGroup.add(removeButton);
+
+        removeButton.connect('clicked', () => {
+            const selectedRow = listBox.get_selected_row();
+            if (selectedRow) {
+                const filePath = selectedRow.get_title();
+                const currentFiles = settings.get_strv('lyric-files');
+                const index = currentFiles.indexOf(filePath);
+                if (index > -1) {
+                    currentFiles.splice(index, 1);
+                    settings.set_strv('lyric-files', currentFiles);
+                }
+            }
+        });
     }
 }

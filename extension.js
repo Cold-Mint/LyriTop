@@ -26,14 +26,165 @@ import { Extension, gettext as _ } from 'resource:///org/gnome/shell/extensions/
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { MprisSource } from 'resource:///org/gnome/shell/ui/mpris.js';
 
+// LRC Parser - parses LRC format lyric files
+class LRCParser {
+    constructor() {
+        this.lyrics = [];
+    }
+
+    // Parse LRC file content
+    parse(content) {
+        this.lyrics = [];
+        const lines = content.split('\n');
+
+        for (const line of lines) {
+            // Match timestamp pattern [mm:ss.xx] or [mm:ss]
+            const match = line.match(/\[(\d+):(\d+)(?:\.(\d+))?\](.*)/);
+            if (match) {
+                const minutes = parseInt(match[1]);
+                const seconds = parseInt(match[2]);
+                const centiseconds = match[3] ? parseInt(match[3]) : 0;
+                const text = match[4].trim();
+
+                // Convert to microseconds for MPRIS compatibility
+                const timeInMicroseconds = (minutes * 60 + seconds) * 1000000 + centiseconds * 10000;
+
+                this.lyrics.push({
+                    time: timeInMicroseconds,
+                    text: text
+                });
+            }
+        }
+
+        // Sort by time
+        this.lyrics.sort((a, b) => a.time - b.time);
+    }
+
+    // Get lyric for specific position (in microseconds)
+    getLyricAtPosition(position) {
+        if (this.lyrics.length === 0) {
+            return null;
+        }
+
+        // Find the lyric line that should be displayed at this position
+        let currentLyric = null;
+        for (const lyric of this.lyrics) {
+            if (lyric.time <= position) {
+                currentLyric = lyric;
+            } else {
+                break;
+            }
+        }
+
+        return currentLyric ? currentLyric.text : null;
+    }
+}
+
+// Lyrics Manager - manages lyric configuration and caching
+class LyricsManager {
+    constructor(settings) {
+        this._settings = settings;
+        this._songToLyricPath = new Map(); // Map: song title -> lyric file path
+        this._lyricCache = new Map(); // Map: lyric file path -> LRCParser
+        this._settingsChangedId = null;
+    }
+
+    enable() {
+        this._loadConfiguration();
+
+        // Listen for changes to lyric files setting
+        this._settingsChangedId = this._settings.connect('changed::lyric-files', () => {
+            this._loadConfiguration();
+        });
+    }
+
+    disable() {
+        if (this._settingsChangedId) {
+            this._settings.disconnect(this._settingsChangedId);
+            this._settingsChangedId = null;
+        }
+
+        this._songToLyricPath.clear();
+        this._lyricCache.clear();
+    }
+
+    _loadConfiguration() {
+        this._songToLyricPath.clear();
+        this._lyricCache.clear();
+
+        const lyricFiles = this._settings.get_strv('lyric-files');
+
+        for (const jsonPath of lyricFiles) {
+            try {
+                const file = Gio.File.new_for_path(jsonPath);
+                const [success, contents] = file.load_contents(null);
+
+                if (success) {
+                    const decoder = new TextDecoder('utf-8');
+                    const jsonText = decoder.decode(contents);
+                    const config = JSON.parse(jsonText);
+
+                    // Process each song mapping
+                    for (const entry of config) {
+                        if (entry.title && entry.path) {
+                            this._songToLyricPath.set(entry.title, entry.path);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error(`Error loading lyric configuration from ${jsonPath}:`, e.message);
+            }
+        }
+    }
+
+    // Get lyric for a song title at specific position
+    getLyric(songTitle, position) {
+        if (!songTitle) {
+            return null;
+        }
+
+        // Find lyric file path for this song
+        const lyricPath = this._songToLyricPath.get(songTitle);
+        if (!lyricPath) {
+            return null;
+        }
+
+        // Check cache first
+        let parser = this._lyricCache.get(lyricPath);
+        if (!parser) {
+            // Load and parse LRC file
+            try {
+                const file = Gio.File.new_for_path(lyricPath);
+                const [success, contents] = file.load_contents(null);
+
+                if (success) {
+                    const decoder = new TextDecoder('utf-8');
+                    const lrcText = decoder.decode(contents);
+
+                    parser = new LRCParser();
+                    parser.parse(lrcText);
+                    this._lyricCache.set(lyricPath, parser);
+                }
+            } catch (e) {
+                console.error(`Error loading lyric file ${lyricPath}:`, e.message);
+                return null;
+            }
+        }
+
+        return parser ? parser.getLyricAtPosition(position) : null;
+    }
+}
+
+
 class MediaMonitor {
-    constructor(onUpdate, settings) {
+    constructor(onUpdate, settings, lyricsManager) {
         this._source = null;
         this._players = new Map();
         this._onUpdate = onUpdate;
         this._updateTimeoutId = null;
         this._settings = settings;
         this._intervalChangedId = null;
+        this._lyricsManager = lyricsManager;
     }
 
     enable() {
@@ -180,12 +331,24 @@ class MediaMonitor {
             }
         }
 
-        let displayText = title;
+        // Try to get lyrics for current song
+        let displayText = '';
+        if (this._lyricsManager) {
+            const lyric = this._lyricsManager.getLyric(title, position);
+            if (lyric) {
+                // Display only the current lyric line
+                displayText = lyric;
+            }
+        }
 
-        if (length > 0) {
-            const currentTime = this._formatTime(position);
-            const totalTime = this._formatTime(length);
-            displayText = `${title} - ${currentTime} / ${totalTime}`;
+        // If no lyrics found, show default song info with time
+        if (!displayText) {
+            displayText = title;
+            if (length > 0) {
+                const currentTime = this._formatTime(position);
+                const totalTime = this._formatTime(length);
+                displayText = `${title} - ${currentTime} / ${totalTime}`;
+            }
         }
 
         this._onUpdate(displayText);
@@ -266,11 +429,15 @@ export default class LyriTopExtension extends Extension {
         this._createIndicator();
         this._updatePosition();
 
+        // Initialize lyrics manager
+        this._lyricsManager = new LyricsManager(this._settings);
+        this._lyricsManager.enable();
+
         this._mediaMonitor = new MediaMonitor((text) => {
             if (this._label) {
                 this._label.text = text;
             }
-        }, this._settings);
+        }, this._settings, this._lyricsManager);
         this._mediaMonitor.enable();
 
         this._settingsChangedId = this._settings.connect('changed::position', () => {
@@ -296,6 +463,11 @@ export default class LyriTopExtension extends Extension {
         if (this._mediaMonitor) {
             this._mediaMonitor.disable();
             this._mediaMonitor = null;
+        }
+
+        if (this._lyricsManager) {
+            this._lyricsManager.disable();
+            this._lyricsManager = null;
         }
 
         this._destroyIndicator();

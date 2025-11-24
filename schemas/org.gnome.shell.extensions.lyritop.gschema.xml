@@ -16,5 +16,10 @@
       <summary>Update Interval</summary>
       <description>Interval in milliseconds for updating the playback position.</description>
     </key>
+    <key name="lyric-files" type="as">
+      <default>[]</default>
+      <summary>Lyric Configuration Files</summary>
+      <description>Array of JSON configuration file paths, each containing mappings from song titles to lyric file paths.</description>
+    </key>
   </schema>
 </schemalist>
