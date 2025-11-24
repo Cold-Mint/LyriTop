@@ -18,39 +18,105 @@
 
 import GObject from 'gi://GObject';
 import St from 'gi://St';
+import Clutter from 'gi://Clutter';
+import GLib from 'gi://GLib';
 
-import {Extension, gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
-import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
-import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
-
+import { Extension, gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-const Indicator = GObject.registerClass(
-class Indicator extends PanelMenu.Button {
-    _init() {
-        super._init(0.0, _('My Shiny Indicator'));
-
-        this.add_child(new St.Icon({
-            icon_name: 'face-smile-symbolic',
-            style_class: 'system-status-icon',
-        }));
-
-        let item = new PopupMenu.PopupMenuItem(_('Show Notification'));
-        item.connect('activate', () => {
-            Main.notify(_('Whatʼs up, folks?'));
-        });
-        this.menu.addMenuItem(item);
-    }
-});
-
-export default class IndicatorExampleExtension extends Extension {
+export default class LyriTopExtension extends Extension {
     enable() {
-        this._indicator = new Indicator();
-        Main.panel.addToStatusArea(this.uuid, this._indicator);
+        this._settings = this.getSettings();
+        this._box = null;
+        this._label = null;
+
+        this._createIndicator();
+        this._updatePosition();
+
+        this._settingsChangedId = this._settings.connect('changed::position', () => {
+            this._updatePosition();
+        });
     }
 
     disable() {
-        this._indicator.destroy();
-        this._indicator = null;
+        if (this._settingsChangedId) {
+            this._settings.disconnect(this._settingsChangedId);
+            this._settingsChangedId = null;
+        }
+
+        this._destroyIndicator();
+        this._settings = null;
+    }
+
+    _createIndicator() {
+        this._box = new St.BoxLayout({
+            style_class: 'panel-button',
+            reactive: true,
+            track_hover: true,
+        });
+
+        this._label = new St.Label({
+            text: 'Hello',
+            y_align: Clutter.ActorAlign.CENTER,
+        });
+
+        this._box.add_child(this._label);
+
+        this._clickId = this._box.connect('button-press-event', () => {
+            this.openPreferences();
+            return Clutter.EVENT_PROPAGATE;
+        });
+    }
+
+    _destroyIndicator() {
+        if (this._box) {
+            if (this._clickId) {
+                this._box.disconnect(this._clickId);
+                this._clickId = null;
+            }
+
+            if (this._box.get_parent()) {
+                this._box.get_parent().remove_child(this._box);
+            }
+
+            this._box.destroy();
+            this._box = null;
+            this._label = null;
+        }
+    }
+
+    _updatePosition() {
+        if (!this._box) return;
+
+        // Remove from current parent if exists
+        if (this._box.get_parent()) {
+            this._box.get_parent().remove_child(this._box);
+        }
+
+        const position = this._settings.get_string('position');
+        let panelBox;
+
+        if (position === 'left') {
+            panelBox = Main.panel._leftBox;
+        } else if (position === 'center') {
+            panelBox = Main.panel._centerBox;
+        } else {
+            // Default to right
+            panelBox = Main.panel._rightBox;
+        }
+
+        // Add to the new position. 
+        // For 'right', we usually want it at the beginning (leftmost of right box) or end?
+        // The reference 'executor' uses insert_child_at_index. 
+        // For simplicity, we'll just add it. If specific ordering is needed, we can refine.
+        // Usually extensions want to be at index 0 for right box to be "leftmost" of the right indicators,
+        // or add_child to be at the end (rightmost).
+        // Let's stick to simple add_child for now, or insert at 0 for right box to avoid being after the system menu.
+
+        if (position === 'right') {
+            panelBox.insert_child_at_index(this._box, 0);
+        } else {
+            panelBox.add_child(this._box);
+        }
     }
 }

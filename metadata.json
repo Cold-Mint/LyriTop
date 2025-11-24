@@ -4,5 +4,6 @@
   "uuid": "lyritop@coldmint",
   "shell-version": [
     "49"
-  ]
+  ],
+  "settings-schema": "org.gnome.shell.extensions.lyritop"
 }

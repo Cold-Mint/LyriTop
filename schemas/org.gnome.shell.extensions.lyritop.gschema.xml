@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist gettext-domain="lyritop">
+  <schema id="org.gnome.shell.extensions.lyritop" path="/org/gnome/shell/extensions/lyritop/">
+    <key name="position" type="s">
+      <default>'right'</default>
+      <summary>Indicator Position</summary>
+      <description>Position of the indicator in the panel (left, center, right).</description>
+    </key>
+  </schema>
+</schemalist>
