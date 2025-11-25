@@ -139,7 +139,11 @@ export class MediaMonitor {
                         const variant = response.get_child_value(0);
                         position = variant.get_variant().get_int64();
                         if (this._lyricsManager) {
-                            const lyric = this._lyricsManager.getLyric(title + artists, position);
+                            // Apply lyric advance offset (convert ms to microseconds)
+                            // 应用歌词提前偏移量（将毫秒转换为微秒）
+                            const advanceMs = this._settings.get_int('lyric-advance-ms');
+                            const adjustedPosition = position + (advanceMs * 1000);
+                            const lyric = this._lyricsManager.getLyric(title + artists, adjustedPosition);
                             if (player.status === 'Playing' && lyric) {
                                 let displayText = lyric;
                                 if (this._settings.get_boolean('only-show-translation')) {

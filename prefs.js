@@ -79,6 +79,24 @@ export default class LyriTopPreferences extends ExtensionPreferences {
             Gio.SettingsBindFlags.DEFAULT
         );
 
+        const lyricAdvanceRow = new Adw.SpinRow({
+            title: _('Lyric Advance Time (ms)'),
+            subtitle: _('Advance lyrics display. Positive values show lyrics earlier, negative values delay them'),
+            adjustment: new Gtk.Adjustment({
+                lower: -5000,
+                upper: 5000,
+                step_increment: 50,
+            }),
+        });
+        group.add(lyricAdvanceRow);
+
+        settings.bind(
+            'lyric-advance-ms',
+            lyricAdvanceRow,
+            'value',
+            Gio.SettingsBindFlags.DEFAULT
+        );
+
         // Lyric files group
         const lyricGroup = new Adw.PreferencesGroup({
             title: _('Lyrics Configuration'),
