@@ -9,7 +9,6 @@ import {LyricsManager} from "./lyricsManager.js";
 export default class LyriTopExtension extends Extension {
     enable() {
         this._settings = this.getSettings();
-        this._box = null;
         this._label = null;
 
         this._createIndicator();
@@ -61,38 +60,25 @@ export default class LyriTopExtension extends Extension {
     }
 
     _createIndicator() {
-        this._box = new St.BoxLayout({
-            style_class: 'panel-button',
-        });
-
         this._label = new St.Label({
             text: '',
             y_align: Clutter.ActorAlign.CENTER,
         });
-
-        this._box.add_child(this._label);
-
     }
 
     _destroyIndicator() {
-        if (this._box) {
-
-            if (this._box.get_parent()) {
-                this._box.get_parent().remove_child(this._box);
-            }
-
-            this._box.destroy();
-            this._box = null;
+        if(this._label){
+            this._label.destroy();
             this._label = null;
         }
     }
 
     _updatePosition() {
-        if (!this._box) return;
+        if (!this._label) return;
 
         // Remove from current parent if exists
-        if (this._box.get_parent()) {
-            this._box.get_parent().remove_child(this._box);
+        if (this._label.get_parent()) {
+            this._label.get_parent().remove_child(this._label);
         }
 
         const position = this._settings.get_string('position');
@@ -116,6 +102,6 @@ export default class LyriTopExtension extends Extension {
             index = children.length;
         }
 
-        panelBox.insert_child_at_index(this._box, index);
+        panelBox.insert_child_at_index(this._label, index);
     }
 }
