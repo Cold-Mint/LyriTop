@@ -9,9 +9,10 @@ import {LyricsManager} from "./lyricsManager.js";
 export default class LyriTopExtension extends Extension {
     enable() {
         this._settings = this.getSettings();
-        this._label = null;
-
-        this._createIndicator();
+        this._label = new St.Label({
+            text: '',
+            y_align: Clutter.ActorAlign.CENTER,
+        });
         this._updatePosition();
 
         // Initialize lyrics manager
@@ -25,7 +26,7 @@ export default class LyriTopExtension extends Extension {
         }, this._settings, this._lyricsManager);
         this._mediaMonitor.enable();
 
-        this._settingsChangedId = this._settings.connect('changed::position', () => {
+        this._positionChangedId = this._settings.connect('changed::position', () => {
             this._updatePosition();
         });
 
@@ -35,9 +36,9 @@ export default class LyriTopExtension extends Extension {
     }
 
     disable() {
-        if (this._settingsChangedId) {
-            this._settings.disconnect(this._settingsChangedId);
-            this._settingsChangedId = null;
+        if (this._positionChangedId) {
+            this._settings.disconnect(this._positionChangedId);
+            this._positionChangedId = null;
         }
 
         if (this._offsetChangedId) {
@@ -55,53 +56,36 @@ export default class LyriTopExtension extends Extension {
             this._lyricsManager = null;
         }
 
-        this._destroyIndicator();
-        this._settings = null;
-    }
-
-    _createIndicator() {
-        this._label = new St.Label({
-            text: '',
-            y_align: Clutter.ActorAlign.CENTER,
-        });
-    }
-
-    _destroyIndicator() {
-        if(this._label){
+        if (this._label) {
             this._label.destroy();
             this._label = null;
         }
+        this._settings = null;
     }
 
     _updatePosition() {
-        if (!this._label) return;
-
-        // Remove from current parent if exists
-        if (this._label.get_parent()) {
-            this._label.get_parent().remove_child(this._label);
+        if (!this._label) {
+            return;
         }
-
+        let parent = this._label.get_parent()
+        if (parent) {
+            parent.remove_child(this._label);
+        }
         const position = this._settings.get_string('position');
         const offset = this._settings.get_uint('offset');
         let panelBox;
-
         if (position === 'left') {
             panelBox = Main.panel._leftBox;
         } else if (position === 'center') {
             panelBox = Main.panel._centerBox;
         } else {
-            // Default to right
             panelBox = Main.panel._rightBox;
         }
-
         const children = panelBox.get_children();
         let index = offset;
-
-
         if (index > children.length) {
             index = children.length;
         }
-
         panelBox.insert_child_at_index(this._label, index);
     }
 }

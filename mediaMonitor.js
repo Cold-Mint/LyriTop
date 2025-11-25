@@ -2,7 +2,11 @@ import {MprisSource} from "resource:///org/gnome/shell/ui/mpris.js";
 import GLib from "gi://GLib";
 import Gio from "gi://Gio";
 
- export class MediaMonitor {
+/**
+ * MediaMonitor
+ * 媒体监测器
+ */
+export class MediaMonitor {
     constructor(onUpdate, settings, lyricsManager) {
         this._source = null;
         this._players = new Map();
@@ -45,6 +49,7 @@ import Gio from "gi://Gio";
         }
 
         if (this._source) {
+            this._source.destroy();
             this._source = null;
         }
 
@@ -108,85 +113,73 @@ import Gio from "gi://Gio";
     }
 
     _updatePlayerInfo(player) {
-        const title = player.trackTitle || 'Unknown Title';
-
-        // Get position and length from MPRIS D-Bus properties
+        const title = player.trackTitle;
+        const artists = player.trackArtists;
+        console.log("Title:", title);
+        console.log("Artists:", artists);
+        if (!title || !artists) {
+            //If the title or artist is blank, it indicates that the audio is not yet ready.
+            // The Gapless music player will send a message with an empty title when enabled.
+            // Some online video websites, such as bilibili, send messages with empty artists when playing videos.
+            //标题或艺术家为空，则表示音频尚未准备好。
+            //Gapless音乐播放器会在启用时发送带有空标题的信息。
+            //一些网络视频网站例如bilibili，在播放视频时发送带有空艺术家的信息。
+            return;
+        }
+        if (!player._playerProxy) {
+            return;
+        }
+        // Get position from MPRIS D-Bus properties
+        // 从MPRIS D-Bus属性中获取音频播放位置
         let position = 0;
-        let length = 0;
-
-        if (player._playerProxy) {
-            try {
-                // Get track length from metadata
-                const metadata = player._playerProxy.Metadata;
-                if (metadata && metadata['mpris:length']) {
-                    // mpris:length is a GLib.Variant, need to unpack it
-                    length = metadata['mpris:length'].unpack();
-                }
-
-                // Position is not cached by MPRIS, we need to query it via D-Bus
-                try {
-                    const connection = player._playerProxy.g_connection;
-                    const busName = player._playerProxy.g_name;
-                    const objectPath = player._playerProxy.g_object_path;
-
-                    const result = connection.call_sync(
-                        busName,
-                        objectPath,
-                        'org.freedesktop.DBus.Properties',
-                        'Get',
-                        new GLib.Variant('(ss)', ['org.mpris.MediaPlayer2.Player', 'Position']),
-                        new GLib.VariantType('(v)'),
-                        Gio.DBusCallFlags.NONE,
-                        -1,
-                        null
-                    );
-
-                    if (result) {
-                        // Result is (v) - a variant containing the value
-                        const variant = result.get_child_value(0);
+        try {
+            const connection = player._playerProxy.g_connection;
+            const busName = player._playerProxy.g_name;
+            const objectPath = player._playerProxy.g_object_path;
+            connection.call(
+                busName,
+                objectPath,
+                'org.freedesktop.DBus.Properties',
+                'Get',
+                new GLib.Variant('(ss)', ['org.mpris.MediaPlayer2.Player', 'Position']),
+                new GLib.VariantType('(v)'),
+                Gio.DBusCallFlags.NONE,
+                -1,
+                null,
+                (source, result) => {
+                    try {
+                        // 这里是异步的回调函数
+                        const response = source.call_finish(result);
+                        const variant = response.get_child_value(0);
                         position = variant.get_variant().get_int64();
+                        if (this._lyricsManager) {
+                            const lyric = this._lyricsManager.getLyric(title + artists, position);
+                            if (lyric) {
+                                this._onUpdate(lyric);
+                            }
+                        }
+                        console.log('Position:', position);
+                    } catch (e) {
+                        console.error('Error calling Position:', e.message);
                     }
-                } catch (e) {
-                    console.log('Error calling Position property:', e.message);
-                    position = 0;
                 }
-            } catch (e) {
-                console.log('Error getting playback info:', e);
-            }
-        }
+            );
 
-        // Try to get lyrics for current song
-        let displayText = '';
-        if (this._lyricsManager) {
-            const lyric = this._lyricsManager.getLyric(title, position);
-            if (lyric) {
-                // Display only the current lyric line
-                displayText = lyric;
-            }
+        } catch (e) {
+            console.log('Error calling Position property:', e.message);
+            position = 0;
         }
-
-        // If no lyrics found, show default song info with time
-        if (!displayText) {
-            displayText = title;
-            if (length > 0) {
-                const currentTime = this._formatTime(position);
-                const totalTime = this._formatTime(length);
-                displayText = `${title} - ${currentTime} / ${totalTime}`;
-            }
-        }
-
-        this._onUpdate(displayText);
     }
 
     _addPlayer(player) {
-        if (this._players.has(player)) return;
+        if (this._players.has(player)) {
+            return;
+        }
 
         const signalId = player.connect('changed', () => {
             this._handlePlayerChange(player);
         });
         this._players.set(player, signalId);
-
-        // Check initial state
         this._handlePlayerChange(player);
     }
 

@@ -2,9 +2,9 @@
 <schemalist gettext-domain="lyritop">
   <schema id="org.gnome.shell.extensions.lyritop" path="/org/gnome/shell/extensions/lyritop/">
     <key name="position" type="s">
-      <default>'right'</default>
+      <default>'center'</default>
       <summary>Indicator Position</summary>
-      <description>Position of the indicator in the panel (left, center, right).</description>
+      <description>Position of the indicator in the panel.</description>
     </key>
     <key name="offset" type="u">
       <default>0</default>

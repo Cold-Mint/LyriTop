@@ -48,7 +48,7 @@ export class LyricsManager {
                     // Process each song mapping
                     for (const entry of config) {
                         if (entry.title && entry.path) {
-                            this._songToLyricPath.set(entry.title, entry.path);
+                            this._songToLyricPath.set(entry.title + entry.artists, entry.path);
                         }
                     }
                 }
