@@ -145,7 +145,7 @@ export class MediaMonitor {
                                 if (this._settings.get_boolean('only-show-translation')) {
                                     const parts = lyric.split('  ');
                                     if (parts.length > 1) {
-                                        displayText = parts.slice(1);
+                                        displayText = parts.slice(1).join(' ');
                                     }
                                 }
                                 this._onUpdate(displayText);
