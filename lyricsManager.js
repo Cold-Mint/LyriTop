@@ -58,30 +58,27 @@ export class LyricsManager {
         }
     }
 
-    // Get lyric for a song title at specific position
-    getLyric(songTitle, position) {
-        if (!songTitle) {
+    getLyric(songKey, position) {
+        if (!songKey) {
             return null;
         }
 
         // Find lyric file path for this song
-        const lyricPath = this._songToLyricPath.get(songTitle);
+        // 查找歌词文件路径
+        const lyricPath = this._songToLyricPath.get(songKey);
         if (!lyricPath) {
             return null;
         }
-
-        // Check cache first
         let parser = this._lyricCache.get(lyricPath);
         if (!parser) {
             // Load and parse LRC file
+            // 加载歌词文件
             try {
                 const file = Gio.File.new_for_path(lyricPath);
                 const [success, contents] = file.load_contents(null);
-
                 if (success) {
                     const decoder = new TextDecoder('utf-8');
                     const lrcText = decoder.decode(contents);
-
                     parser = new LRCParser();
                     parser.parse(lrcText);
                     this._lyricCache.set(lyricPath, parser);
@@ -91,7 +88,6 @@ export class LyricsManager {
                 return null;
             }
         }
-
         return parser ? parser.getLyricAtPosition(position) : null;
     }
 }

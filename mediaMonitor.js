@@ -49,7 +49,6 @@ export class MediaMonitor {
         }
 
         if (this._source) {
-            this._source.destroy();
             this._source = null;
         }
 
@@ -65,6 +64,7 @@ export class MediaMonitor {
         }
 
         // Get update interval from settings (in milliseconds)
+        // 从设置中获取更新间隔（以毫秒为单位）
         const interval = this._settings.get_uint('update-interval');
         this._updateTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, interval, () => {
             this._updateCurrentPlayer();
@@ -77,17 +77,6 @@ export class MediaMonitor {
             GLib.source_remove(this._updateTimeoutId);
             this._updateTimeoutId = null;
         }
-    }
-
-    _formatTime(microseconds) {
-        if (!microseconds || microseconds < 0) {
-            return '0:00';
-        }
-
-        const seconds = Math.floor(microseconds / 1000000);
-        const minutes = Math.floor(seconds / 60);
-        const remainingSeconds = seconds % 60;
-        return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
     }
 
     _updateCurrentPlayer() {
@@ -195,13 +184,7 @@ export class MediaMonitor {
         if (player.status === 'Playing') {
             this._updatePlayerInfo(player);
         } else if (player.status === 'Paused') {
-            // We might want to check if other players are playing before clearing
-            // For now, simple logic: if this player paused, clear.
-            // But if we have multiple players, this might be racey.
-            // Let's iterate all players to see if any is playing.
-
             let anyPlaying = false;
-
             if (this._source) {
                 for (const p of this._source.players) {
                     if (p.status === 'Playing') {
@@ -215,23 +198,6 @@ export class MediaMonitor {
             if (!anyPlaying) {
                 // Show paused player info
                 this._updatePlayerInfo(player);
-            }
-        } else {
-            // For Stopped or other states, also check if others are playing
-            let anyPlaying = false;
-
-            if (this._source) {
-                for (const p of this._source.players) {
-                    if (p.status === 'Playing') {
-                        anyPlaying = true;
-                        this._updatePlayerInfo(p);
-                        return;
-                    }
-                }
-            }
-
-            if (!anyPlaying) {
-                this._onUpdate('');
             }
         }
     }
