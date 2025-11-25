@@ -52,7 +52,7 @@ export default class LyriTopPreferences extends ExtensionPreferences {
             title: _('Update Interval (ms)'),
             subtitle: _('How often to update playback position'),
             adjustment: new Gtk.Adjustment({
-                lower: 50,
+                lower: 10,
                 upper: 1000,
                 step_increment: 1,
             }),
