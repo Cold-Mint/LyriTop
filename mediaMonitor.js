@@ -104,8 +104,6 @@ export class MediaMonitor {
     _updatePlayerInfo(player) {
         const title = player.trackTitle;
         const artists = player.trackArtists;
-        console.log("Title:", title);
-        console.log("Artists:", artists);
         if (!title || !artists) {
             //If the title or artist is blank, it indicates that the audio is not yet ready.
             // The Gapless music player will send a message with an empty title when enabled.
@@ -137,17 +135,15 @@ export class MediaMonitor {
                 null,
                 (source, result) => {
                     try {
-                        // 这里是异步的回调函数
                         const response = source.call_finish(result);
                         const variant = response.get_child_value(0);
                         position = variant.get_variant().get_int64();
                         if (this._lyricsManager) {
                             const lyric = this._lyricsManager.getLyric(title + artists, position);
-                            if (lyric) {
+                            if (player.status === 'Playing' && lyric) {
                                 this._onUpdate(lyric);
                             }
                         }
-                        console.log('Position:', position);
                     } catch (e) {
                         console.error('Error calling Position:', e.message);
                     }
@@ -178,6 +174,9 @@ export class MediaMonitor {
             player.disconnect(signalId);
             this._players.delete(player);
         }
+        if (this._players.length === undefined || this._players.size === 0) {
+            this._onUpdate('');
+        }
     }
 
     _handlePlayerChange(player) {
@@ -194,10 +193,8 @@ export class MediaMonitor {
                     }
                 }
             }
-
             if (!anyPlaying) {
-                // Show paused player info
-                this._updatePlayerInfo(player);
+                this._onUpdate('');
             }
         }
     }
