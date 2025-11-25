@@ -5,5 +5,7 @@
   "shell-version": [
     "49"
   ],
-  "settings-schema": "org.gnome.shell.extensions.lyritop"
+  "settings-schema": "org.gnome.shell.extensions.lyritop",
+  "url": "https://github.com/Cold-Mint/LyriTop",
+  "version": 1
 }
