@@ -14,7 +14,7 @@
     </key>
 
     <key name="update-interval" type="u">
-      <default>50</default>
+      <default>10</default>
       <summary>Update Interval</summary>
       <description>Interval in milliseconds for updating the playback position.</description>
     </key>
@@ -26,7 +26,7 @@
     </key>
 
     <key name="lyric-advance-ms" type="i">
-      <default>0</default>
+      <default>50</default>
       <range min="-5000" max="5000"/>
       <summary>Lyric Advance Time</summary>
       <description>Advance lyric display by this many milliseconds. Positive values show lyrics earlier, negative values delay them.</description>
