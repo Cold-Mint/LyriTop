@@ -1,5 +1,6 @@
 import Adw from 'gi://Adw';
 import Gtk from 'gi://Gtk';
+import Gio from 'gi://Gio';
 import { ExtensionPreferences, gettext as _ } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 export default class LyriTopPreferences extends ExtensionPreferences {
@@ -62,7 +63,20 @@ export default class LyriTopPreferences extends ExtensionPreferences {
             'update-interval',
             updateIntervalRow,
             'value',
-            0
+            Gio.SettingsBindFlags.DEFAULT
+        );
+
+        const onlyShowTranslationRow = new Adw.SwitchRow({
+            title: _('Only Show Translation'),
+            subtitle: _('If enabled, only show the translation part of the lyrics'),
+        });
+        group.add(onlyShowTranslationRow);
+
+        settings.bind(
+            'only-show-translation',
+            onlyShowTranslationRow,
+            'active',
+            Gio.SettingsBindFlags.DEFAULT
         );
 
         // Lyric files group

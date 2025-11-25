@@ -1,4 +1,4 @@
-import {MprisSource} from "resource:///org/gnome/shell/ui/mpris.js";
+import { MprisSource } from "resource:///org/gnome/shell/ui/mpris.js";
 import GLib from "gi://GLib";
 import Gio from "gi://Gio";
 
@@ -141,7 +141,14 @@ export class MediaMonitor {
                         if (this._lyricsManager) {
                             const lyric = this._lyricsManager.getLyric(title + artists, position);
                             if (player.status === 'Playing' && lyric) {
-                                this._onUpdate(lyric);
+                                let displayText = lyric;
+                                if (this._settings.get_boolean('only-show-translation')) {
+                                    const parts = lyric.split('  ');
+                                    if (parts.length > 1) {
+                                        displayText = parts.slice(1);
+                                    }
+                                }
+                                this._onUpdate(displayText);
                             }
                         }
                     } catch (e) {
