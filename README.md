@@ -30,7 +30,7 @@ cd LyriTop
 
 使用`gnome-extensions`用于将扩展程序打包成压缩文件的工具。
 ```bash
-gnome-extensions pack --podir=po .
+gnome-extensions pack --extra-source=./lrcParser.js --extra-source=./lyricsManager.js --extra-source=./mediaMonitor.js  --podir=po .
 ```
 这会在当前目录中创建一个名为`lyritop@coldmint.shell-extension.zip`的文件。
 
@@ -47,3 +47,8 @@ gnome-extensions install lyritop@coldmint.shell-extension.zip
 gnome-extensions enable lyritop@coldmint
 ```
 
+## 调试运行
+
+```bash
+sh ./run-debug.sh
+```
