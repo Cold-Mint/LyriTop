@@ -1,41 +1,41 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<schemalist gettext-domain="lyritop">
+<schemalist gettext-domain="lyritop@coldmint">
   <schema id="org.gnome.shell.extensions.lyritop" path="/org/gnome/shell/extensions/lyritop/">
     <key name="position" type="s">
-      <default>'center'</default>
-      <summary>Indicator Position</summary>
-      <description>Position of the indicator in the panel.</description>
+      <default>"center"</default>
+      <summary>gettext("Indicator Position")</summary>
+      <description>gettext("Position of the indicator in the panel.")</description>
     </key>
 
     <key name="offset" type="u">
       <default>0</default>
-      <summary>Indicator Offset</summary>
-      <description>Index offset of the indicator in the panel box.</description>
+      <summary>gettext("Indicator Offset")</summary>
+      <description>gettext("Index offset of the indicator in the panel box.")</description>
     </key>
 
     <key name="update-interval" type="u">
       <default>10</default>
-      <summary>Update Interval</summary>
-      <description>Interval in milliseconds for updating the playback position.</description>
+      <summary>gettext("Update Interval")</summary>
+      <description>gettext("Interval in milliseconds for updating the playback position.")</description>
     </key>
 
    <key name="only-show-translation" type="b">
       <default>false</default>
-      <summary>Only Show Translation</summary>
-      <description>If enabled, only show the translation part of the lyrics (text after two consecutive spaces).</description>
+      <summary>gettext("Only Show Translation")</summary>
+      <description>gettext("If enabled, only show the translation part of the lyrics (text after two consecutive spaces).")</description>
     </key>
 
     <key name="lyric-advance-ms" type="i">
       <default>50</default>
       <range min="-5000" max="5000"/>
-      <summary>Lyric Advance Time</summary>
-      <description>Advance lyric display by this many milliseconds. Positive values show lyrics earlier, negative values delay them.</description>
+      <summary>gettext("Lyric Advance Time")</summary>
+      <description>gettext("Advance lyric display by this many milliseconds. Positive values show lyrics earlier, negative values delay them.")</description>
     </key>
 
     <key name="lyric-files" type="as">
       <default>[]</default>
-      <summary>Lyric Configuration Files</summary>
-      <description>Array of JSON configuration file paths, each containing mappings from song titles to lyric file paths.</description>
+      <summary>gettext("Lyric Configuration Files")</summary>
+      <description>gettext("Array of JSON configuration file paths, each containing mappings from song titles to lyric file paths.")</description>
     </key>
   </schema>
 </schemalist>

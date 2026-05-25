@@ -3,9 +3,11 @@
   "description": "LyriTop",
   "uuid": "lyritop@coldmint",
   "shell-version": [
-    "49"
+    "49",
+    "50"
   ],
   "settings-schema": "org.gnome.shell.extensions.lyritop",
+  "gettext-domain": "lyritop@coldmint",
   "url": "https://github.com/Cold-Mint/LyriTop",
-  "version": 1
+  "version": 2
 }
